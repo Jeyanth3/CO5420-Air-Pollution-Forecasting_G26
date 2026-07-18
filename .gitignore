@@ -5,6 +5,11 @@ data/source/
 submissions/*.csv
 reports/day1/*.csv
 reports/day1/*.json
+reports/preprocessing_window_baselines/*.csv
+reports/preprocessing_window_baselines/*.json
+reports/gradient_boosting/*.csv
+reports/gradient_boosting/*.json
+models/
 
 # Python
 __pycache__/
