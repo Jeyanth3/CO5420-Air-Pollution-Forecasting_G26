@@ -2,30 +2,112 @@
 
 > A reproducible forecasting pipeline predicting next-hour PM2.5 concentrations using 24-hour weather, pollution, and calendar data.
 
-## 📌 About the Project
-This repository contains the machine learning workflow for the **CO5420: Artificial Neural Networks and Deep Learning** course project. The objective is to forecast short-term PM2.5 levels using data from the Beijing Multi-Site Air Quality Dataset. The project explores both traditional machine learning baselines and temporal deep learning models to determine the most effective approach for time-series regression. 
+## About The Project
 
-## 🚀 Key Features
-* **Data Preprocessing:** 24-hour window generation, missing value imputation, and feature scaling.
-* **Baseline Models:** Persistence, Rolling Mean, Ridge Regression, and Random Forest.
-* **Advanced Models:** Gradient Boosting (XGBoost/LightGBM) and Temporal Neural Networks (LSTM, GRU).
-* **Extended Analysis:** Window-size studies, meteorological feature ablation, and AQI classification.
+This repository contains the machine learning workflow for the **CO5420: Artificial Neural Networks and Deep Learning** course project. The objective is to forecast short-term PM2.5 levels using data from the Beijing Multi-Site Air Quality Dataset. The project explores both traditional machine learning baselines and temporal deep learning models to determine the most effective approach for time-series regression.
 
-## 🛠️ Tech Stack
-* **Language:** Python
-* **Libraries:** Pandas, Scikit-learn, TensorFlow/Keras (or PyTorch)
-* **Environment:** Jupyter Notebook / Kaggle
+The Kaggle task is to predict the PM2.5 concentration one hour after a 24-hour input window from one Beijing monitoring station. Kaggle evaluates submissions with RMSE. Our local workflow also reports MAE for interpretation.
 
-## 📂 Dataset
-* **Name:** Beijing Multi-Site Air Quality Dataset (UCI Machine Learning Repository).
-* **Target:** Next-hour PM2.5 concentration.
-* **Inputs:** Pollutants, meteorological data, and calendar information.
+## Key Features
 
-## 👥 Team: Group_26
-* E/22/176 - A.L.JEYANTH
-* E/22/271 - P.PATHIMILAN
-* E/22/051 - K.BHAVEENTHAN
-* E/22/385 - S.SULAKSAN
-* E/22/227 - P.MANOJH
+- **Data Preprocessing:** 24-hour window generation, missing-value imputation, wind-direction encoding, and feature scaling.
+- **Baseline Models:** Persistence, rolling mean, Ridge Regression, and Random Forest.
+- **Advanced Models:** Gradient Boosting with XGBoost/LightGBM/CatBoost and temporal neural networks such as LSTM and GRU.
+- **Extended Analysis:** Window-size studies, meteorological feature ablation, feature importance, and AQI classification.
 
----
+## Tech Stack
+
+- **Language:** Python
+- **Libraries:** Pandas, NumPy, Scikit-learn, TensorFlow/Keras or PyTorch for later neural models
+- **Environment:** Jupyter Notebook / Kaggle
+
+## Dataset
+
+- **Name:** Beijing Multi-Site Air Quality Dataset
+- **Source:** UCI Machine Learning Repository and Kaggle competition files
+- **Target:** Next-hour PM2.5 concentration
+- **Inputs:** Pollutants, meteorological data, station name, and calendar information
+
+The raw data files are not committed to Git. Put them in `data/raw/` locally, or run the notebook in Kaggle where the files are mounted under `/kaggle/input/...`.
+
+Expected competition files:
+
+```text
+train_raw.csv
+test.csv
+sample_submission.csv
+```
+
+Optional for extended work:
+
+```text
+test_raw.csv
+```
+
+If you downloaded the original 12-station Beijing source dataset from Kaggle or UCI, prepare the competition-style raw files with:
+
+```bash
+python3 -m src.prepare_data_from_source \
+  --source-dir "/Users/bhaveenthankajanikanth/Downloads/archive-2" \
+  --output-dir data/raw \
+  --include-test-raw
+```
+
+## Day 1 Status
+
+Day 1 creates the project foundation:
+
+- Research roadmap added in `docs/roadmap_report.md`.
+- Source-code structure added under `src/`.
+- Kaggle-ready notebook added under `notebooks/`.
+- Persistence baseline pipeline added.
+- Day 1 learning report added in `reports/day1/day1_work_learning.md`.
+
+The local persistence baseline from the reconstructed `train_raw.csv` produced:
+
+```text
+RMSE: 21.4431
+MAE:  9.9529
+```
+
+## Quick Start
+
+Install dependencies:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+Run the Day 1 persistence baseline locally after placing Kaggle files in `data/raw/`:
+
+```bash
+python3 -m src.day1_pipeline --data-dir data/raw --output-dir .
+```
+
+The pipeline writes:
+
+```text
+reports/day1/eda_summary.csv
+reports/day1/missing_values.csv
+reports/day1/persistence_validation_metrics.csv
+submissions/submission_persistence.csv
+```
+
+## Kaggle Notebook
+
+Use:
+
+```text
+notebooks/01_day1_persistence_baseline.ipynb
+```
+
+The notebook is designed to run in Kaggle and locate the competition input directory automatically.
+
+## Team: Group_26
+
+- E/22/176 - A.L.JEYANTH
+- E/22/271 - P.PATHIMILAN
+- E/22/051 - K.BHAVEENTHAN
+- E/22/385 - S.SULAKSAN
+- E/22/227 - P.MANOJH
+
