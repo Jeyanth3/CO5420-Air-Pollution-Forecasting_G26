@@ -70,6 +70,22 @@ RMSE: 21.4431
 MAE:  9.9529
 ```
 
+The preprocessing/window baseline validation currently gives:
+
+```text
+Best model: Ridge Regression
+RMSE: 20.1097
+MAE:  10.0946
+```
+
+The current best tabular validation result is:
+
+```text
+Best model: Weighted ensemble
+RMSE: 19.5651
+MAE:  9.6886
+```
+
 ## Quick Start
 
 Install dependencies:
@@ -82,6 +98,18 @@ Run the Day 1 persistence baseline locally after placing Kaggle files in `data/r
 
 ```bash
 python3 -m src.day1_pipeline --data-dir data/raw --output-dir .
+```
+
+Run the preprocessing/window/model baseline experiments:
+
+```bash
+python3 -m src.preprocessing_window_baselines --data-dir data/raw --output-dir .
+```
+
+Run the gradient boosting and feature-engineering experiments:
+
+```bash
+python3 -m src.gradient_boosting_models --data-dir data/raw --output-dir . --max-boost-train-rows 0
 ```
 
 The pipeline writes:
@@ -99,9 +127,11 @@ Use:
 
 ```text
 notebooks/01_day1_persistence_baseline.ipynb
+notebooks/02_preprocessing_window_baselines.ipynb
+notebooks/03_gradient_boosting_feature_engineering.ipynb
 ```
 
-The notebook is designed to run in Kaggle and locate the competition input directory automatically.
+The Day 1 notebook is designed to run in Kaggle and locate the competition input directory automatically. The later notebooks run local experiment pipelines and display the saved result tables.
 
 ## Team: Group_26
 
@@ -110,4 +140,3 @@ The notebook is designed to run in Kaggle and locate the competition input direc
 - E/22/051 - K.BHAVEENTHAN
 - E/22/385 - S.SULAKSAN
 - E/22/227 - P.MANOJH
-
