@@ -1,0 +1,21 @@
+# Data and generated artifacts
+data/raw/
+data/processed/
+data/source/
+submissions/*.csv
+reports/day1/*.csv
+reports/day1/*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Environment
+.venv/
+venv/
+.env
+
+# OS/editor
+.DS_Store
