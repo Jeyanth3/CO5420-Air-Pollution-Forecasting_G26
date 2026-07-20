@@ -9,6 +9,8 @@ reports/preprocessing_window_baselines/*.csv
 reports/preprocessing_window_baselines/*.json
 reports/gradient_boosting/*.csv
 reports/gradient_boosting/*.json
+reports/temporal_neural_models/*.csv
+reports/temporal_neural_models/*.json
 models/
 
 # Python
