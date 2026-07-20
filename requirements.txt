@@ -8,3 +8,4 @@ ipykernel>=6.29
 lightgbm>=4.6
 xgboost>=3.3
 catboost>=1.2
+torch>=2.0

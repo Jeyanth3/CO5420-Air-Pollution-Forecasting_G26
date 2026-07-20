@@ -86,6 +86,14 @@ RMSE: 19.5651
 MAE:  9.6886
 ```
 
+The current temporal neural-model validation result is:
+
+```text
+Best neural model: CNN-LSTM
+RMSE: 21.4933
+MAE:  11.7208
+```
+
 ## Quick Start
 
 Install dependencies:
@@ -112,6 +120,12 @@ Run the gradient boosting and feature-engineering experiments:
 python3 -m src.gradient_boosting_models --data-dir data/raw --output-dir . --max-boost-train-rows 0
 ```
 
+Run the temporal neural model experiments:
+
+```bash
+python3 -m src.temporal_neural_models --data-dir data/raw --output-dir .
+```
+
 The pipeline writes:
 
 ```text
@@ -129,6 +143,7 @@ Use:
 notebooks/01_day1_persistence_baseline.ipynb
 notebooks/02_preprocessing_window_baselines.ipynb
 notebooks/03_gradient_boosting_feature_engineering.ipynb
+notebooks/04_temporal_neural_models.ipynb
 ```
 
 The Day 1 notebook is designed to run in Kaggle and locate the competition input directory automatically. The later notebooks run local experiment pipelines and display the saved result tables.
