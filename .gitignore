@@ -17,6 +17,8 @@ reports/severe_pollution_correction/*.csv
 reports/severe_pollution_correction/*.json
 reports/final_objective_experiments/*.csv
 reports/final_objective_experiments/*.json
+reports/rmse_improvement_error_analysis/*.csv
+reports/rmse_improvement_error_analysis/*.json
 models/
 
 # Python

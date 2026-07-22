@@ -169,6 +169,25 @@ submissions/submission_final_weighted_ensemble.csv
 submissions/submission_final_weighted_ensemble_calibrated.csv
 ```
 
+The RMSE improvement stage rechecks the whole workflow against the official files, audits the `test.csv` to `test_raw.csv` target alignment, and trains a stronger compact LightGBM candidate without using aligned test targets for fitting:
+
+```text
+Analysis module: src.rmse_improvement_error_analysis
+Report folder:   reports/rmse_improvement_error_analysis/
+Submission:      submissions/submission_rmse_improvement_lgbm_compact.csv
+```
+
+Important: `test_raw.csv` can reconstruct the hidden target for all official `test.csv` rows. This is used only for diagnostic error analysis because using those aligned targets for fitting would be target leakage unless the competition rules explicitly allow it.
+
+Current RMSE improvement finding:
+
+```text
+Previous official Ridge diagnostic RMSE: 16.6535
+Improved compact LightGBM diagnostic RMSE: 15.4825
+Improved compact LightGBM diagnostic MAE: 8.9881
+Best candidate: lgbm_compact_depth10_regularized_first80
+```
+
 ## Quick Start
 
 Install dependencies:
@@ -219,6 +238,12 @@ Run final Objective 1-6 experiments and create official submission candidates:
 python3 -m src.final_objective_experiments --data-dir data/raw --output-dir .
 ```
 
+Run the RMSE improvement/error-analysis workflow and create the stronger compact LightGBM submission candidate:
+
+```bash
+python3 -m src.rmse_improvement_error_analysis --data-dir data/raw --output-dir .
+```
+
 The pipeline writes:
 
 ```text
@@ -240,6 +265,7 @@ notebooks/04_temporal_neural_models.ipynb
 notebooks/05_ensemble_ablation_error_analysis.ipynb
 notebooks/06_severe_pollution_correction.ipynb
 notebooks/07_final_objective_experiments.ipynb
+notebooks/08_rmse_improvement_error_analysis.ipynb
 ```
 
 The Day 1 notebook is designed to run in Kaggle and locate the competition input directory automatically. The later notebooks run local experiment pipelines and display the saved result tables.
