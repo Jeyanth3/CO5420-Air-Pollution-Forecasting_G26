@@ -13,7 +13,7 @@ The Kaggle task is to predict the PM2.5 concentration one hour after a 24-hour i
 - **Data Preprocessing:** 24-hour window generation, missing-value imputation, wind-direction encoding, and feature scaling.
 - **Baseline Models:** Persistence, rolling mean, Ridge Regression, and Random Forest.
 - **Advanced Models:** Gradient Boosting with XGBoost/LightGBM/CatBoost and temporal neural networks such as LSTM and GRU.
-- **Extended Analysis:** Window-size studies, meteorological feature ablation, feature importance, and AQI classification.
+- **Extended Analysis:** Ensemble weighting, imputation/feature-group ablations, station-wise errors, PM2.5-band errors, feature importance, and AQI classification.
 
 ## Tech Stack
 
@@ -94,6 +94,29 @@ RMSE: 21.4933
 MAE:  11.7208
 ```
 
+The current analysis stage compares saved model predictions, tests ensemble blends, runs imputation/feature ablations, and creates report figures:
+
+```text
+Analysis module: src.ensemble_ablation_error_analysis
+Report folder:   reports/ensemble_ablation_error_analysis/
+```
+
+Current ensemble/error-analysis finding:
+
+```text
+Best full-validation individual model: boost_weighted_ensemble
+Full-validation RMSE: 19.5651
+Full-validation MAE:  9.6886
+
+Best late-validation ensemble candidate: reference_boost_weighted_ensemble
+Late-validation RMSE: 24.7594
+Late-validation MAE:  11.9328
+
+Best Ridge ablation: window_interpolation + all_features
+RMSE: 19.7279
+MAE:  9.9664
+```
+
 ## Quick Start
 
 Install dependencies:
@@ -126,6 +149,12 @@ Run the temporal neural model experiments:
 python3 -m src.temporal_neural_models --data-dir data/raw --output-dir .
 ```
 
+Run ensemble, ablation, and error analysis after the earlier validation prediction files exist:
+
+```bash
+python3 -m src.ensemble_ablation_error_analysis --data-dir data/raw --output-dir .
+```
+
 The pipeline writes:
 
 ```text
@@ -144,6 +173,7 @@ notebooks/01_day1_persistence_baseline.ipynb
 notebooks/02_preprocessing_window_baselines.ipynb
 notebooks/03_gradient_boosting_feature_engineering.ipynb
 notebooks/04_temporal_neural_models.ipynb
+notebooks/05_ensemble_ablation_error_analysis.ipynb
 ```
 
 The Day 1 notebook is designed to run in Kaggle and locate the competition input directory automatically. The later notebooks run local experiment pipelines and display the saved result tables.
