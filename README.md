@@ -142,6 +142,33 @@ Best late-holdout calibration: additive_threshold_overall_rmse
 Late-holdout RMSE: 24.6262 vs 24.7516 baseline
 ```
 
+The final official-data stage runs Objective 1-6 from the future research plan and creates official Kaggle submission candidates:
+
+```text
+Analysis module: src.final_objective_experiments
+Report folder:   reports/final_objective_experiments/
+Submissions:     submissions/submission_final_weighted_ensemble*.csv
+```
+
+The public leaderboard uses about 30% of `test.csv`; final ranking uses the other 70%, so local chronological validation remains the main model-selection signal.
+
+Current final objective finding:
+
+```text
+Best objective-stage validation model: objective_weighted_blend_calibrated
+Validation RMSE: 19.7454
+Validation MAE:  9.8912
+Severe-band RMSE: 38.9453
+
+Learned blend weights:
+ridge_alpha_10: 1.0
+lightgbm_tuned_compact_recent: 0.0
+
+Generated submissions:
+submissions/submission_final_weighted_ensemble.csv
+submissions/submission_final_weighted_ensemble_calibrated.csv
+```
+
 ## Quick Start
 
 Install dependencies:
@@ -186,6 +213,12 @@ Run severe-pollution correction experiments:
 python3 -m src.severe_pollution_correction --data-dir data/raw --output-dir .
 ```
 
+Run final Objective 1-6 experiments and create official submission candidates:
+
+```bash
+python3 -m src.final_objective_experiments --data-dir data/raw --output-dir .
+```
+
 The pipeline writes:
 
 ```text
@@ -206,6 +239,7 @@ notebooks/03_gradient_boosting_feature_engineering.ipynb
 notebooks/04_temporal_neural_models.ipynb
 notebooks/05_ensemble_ablation_error_analysis.ipynb
 notebooks/06_severe_pollution_correction.ipynb
+notebooks/07_final_objective_experiments.ipynb
 ```
 
 The Day 1 notebook is designed to run in Kaggle and locate the competition input directory automatically. The later notebooks run local experiment pipelines and display the saved result tables.
