@@ -117,6 +117,31 @@ RMSE: 19.7279
 MAE:  9.9664
 ```
 
+The severe-pollution correction stage targets the biggest remaining error mode: underprediction when true PM2.5 is above 150.
+
+```text
+Analysis module: src.severe_pollution_correction
+Report folder:   reports/severe_pollution_correction/
+```
+
+Current severe-pollution correction finding:
+
+```text
+Best full-validation RMSE model: saved_weighted_ensemble
+RMSE: 19.5531
+MAE:  9.6707
+Severe-band RMSE: 38.8770
+Severe-band bias: -9.0084
+
+Best severe-band RMSE model: ridge_weighted_high2_severe8
+Overall RMSE: 20.5573
+Severe-band RMSE: 37.5473
+Severe-band bias: -3.8752
+
+Best late-holdout calibration: additive_threshold_overall_rmse
+Late-holdout RMSE: 24.6262 vs 24.7516 baseline
+```
+
 ## Quick Start
 
 Install dependencies:
@@ -155,6 +180,12 @@ Run ensemble, ablation, and error analysis after the earlier validation predicti
 python3 -m src.ensemble_ablation_error_analysis --data-dir data/raw --output-dir .
 ```
 
+Run severe-pollution correction experiments:
+
+```bash
+python3 -m src.severe_pollution_correction --data-dir data/raw --output-dir .
+```
+
 The pipeline writes:
 
 ```text
@@ -174,6 +205,7 @@ notebooks/02_preprocessing_window_baselines.ipynb
 notebooks/03_gradient_boosting_feature_engineering.ipynb
 notebooks/04_temporal_neural_models.ipynb
 notebooks/05_ensemble_ablation_error_analysis.ipynb
+notebooks/06_severe_pollution_correction.ipynb
 ```
 
 The Day 1 notebook is designed to run in Kaggle and locate the competition input directory automatically. The later notebooks run local experiment pipelines and display the saved result tables.

@@ -13,6 +13,8 @@ reports/temporal_neural_models/*.csv
 reports/temporal_neural_models/*.json
 reports/ensemble_ablation_error_analysis/*.csv
 reports/ensemble_ablation_error_analysis/*.json
+reports/severe_pollution_correction/*.csv
+reports/severe_pollution_correction/*.json
 models/
 
 # Python
