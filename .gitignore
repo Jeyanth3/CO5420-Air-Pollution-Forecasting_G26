@@ -19,6 +19,8 @@ reports/final_objective_experiments/*.csv
 reports/final_objective_experiments/*.json
 reports/rmse_improvement_error_analysis/*.csv
 reports/rmse_improvement_error_analysis/*.json
+reports/modern_temporal_rmse_improvements/*.csv
+reports/modern_temporal_rmse_improvements/*.json
 models/
 
 # Python

@@ -188,6 +188,23 @@ Improved compact LightGBM diagnostic MAE: 8.9881
 Best candidate: lgbm_compact_depth10_regularized_first80
 ```
 
+The modern temporal/RMSE improvement stage tests whether newer methods can beat the compact LightGBM candidate:
+
+```text
+Analysis module: src.modern_temporal_rmse_improvements
+Report folder:   reports/modern_temporal_rmse_improvements/
+Submission:      submissions/submission_modern_lgbm_depth10.csv
+```
+
+Current modern-method finding:
+
+```text
+Best competition-safe model: lgbm_depth10_regularized_first80
+Diagnostic RMSE: 15.4825
+Station-specific LightGBM, XGBoost, CatBoost, and tiny TCN did not beat it.
+Diagnostic LGBM/CatBoost blend was only marginally better and is not submission-safe because its weight used aligned official targets.
+```
+
 ## Quick Start
 
 Install dependencies:
@@ -244,6 +261,12 @@ Run the RMSE improvement/error-analysis workflow and create the stronger compact
 python3 -m src.rmse_improvement_error_analysis --data-dir data/raw --output-dir .
 ```
 
+Run the modern-method comparison workflow:
+
+```bash
+python3 -m src.modern_temporal_rmse_improvements --data-dir data/raw --output-dir .
+```
+
 The pipeline writes:
 
 ```text
@@ -266,6 +289,7 @@ notebooks/05_ensemble_ablation_error_analysis.ipynb
 notebooks/06_severe_pollution_correction.ipynb
 notebooks/07_final_objective_experiments.ipynb
 notebooks/08_rmse_improvement_error_analysis.ipynb
+notebooks/09_modern_temporal_rmse_improvements.ipynb
 ```
 
 The Day 1 notebook is designed to run in Kaggle and locate the competition input directory automatically. The later notebooks run local experiment pipelines and display the saved result tables.
