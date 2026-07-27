@@ -21,6 +21,8 @@ reports/rmse_improvement_error_analysis/*.csv
 reports/rmse_improvement_error_analysis/*.json
 reports/modern_temporal_rmse_improvements/*.csv
 reports/modern_temporal_rmse_improvements/*.json
+reports/final_rmse_private_robustness/*.csv
+reports/final_rmse_private_robustness/*.json
 models/
 
 # Python

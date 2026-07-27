@@ -205,6 +205,21 @@ Station-specific LightGBM, XGBoost, CatBoost, and tiny TCN did not beat it.
 Diagnostic LGBM/CatBoost blend was only marginally better and is not submission-safe because its weight used aligned official targets.
 ```
 
+The final private-robustness stage tests LightGBM seed/bagging variants and adds a Colab T4 notebook for serious temporal neural-network training:
+
+```text
+Report folder: reports/final_rmse_private_robustness/
+GPU notebook:  notebooks/10_colab_t4_temporal_nn_experiments.ipynb
+```
+
+Current final robustness finding:
+
+```text
+Best sharp candidate: submissions/submission_modern_lgbm_depth10.csv
+Best smoother backups: submissions/submission_bag_mean5.csv and submissions/submission_all_safe_mean.csv
+Bagged ensembles improve chronological validation but do not beat the single best model on diagnostic official-test RMSE.
+```
+
 ## Quick Start
 
 Install dependencies:
@@ -267,6 +282,12 @@ Run the modern-method comparison workflow:
 python3 -m src.modern_temporal_rmse_improvements --data-dir data/raw --output-dir .
 ```
 
+For serious temporal neural-network experiments, run this notebook in Google Colab with a T4 GPU:
+
+```text
+notebooks/10_colab_t4_temporal_nn_experiments.ipynb
+```
+
 The pipeline writes:
 
 ```text
@@ -290,6 +311,7 @@ notebooks/06_severe_pollution_correction.ipynb
 notebooks/07_final_objective_experiments.ipynb
 notebooks/08_rmse_improvement_error_analysis.ipynb
 notebooks/09_modern_temporal_rmse_improvements.ipynb
+notebooks/10_colab_t4_temporal_nn_experiments.ipynb
 ```
 
 The Day 1 notebook is designed to run in Kaggle and locate the competition input directory automatically. The later notebooks run local experiment pipelines and display the saved result tables.
