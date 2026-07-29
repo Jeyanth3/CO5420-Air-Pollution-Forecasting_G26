@@ -136,6 +136,9 @@ def add_window_summary_features(windows: pd.DataFrame, window_size: int = 24) ->
             cols = [f"{TARGET}_lag_{lag}" for lag in range(k, 0, -1)]
             out[f"pm25_mean_{k}h"] = out[cols].mean(axis=1)
         out["pm25_std_24h"] = out[available_pm25].std(axis=1)
+        for k in [6, 12]:
+            cols = [f"{TARGET}_lag_{lag}" for lag in range(k, 0, -1)]
+            out[f"pm25_std_{k}h"] = out[cols].std(axis=1)
         out["pm25_min_24h"] = out[available_pm25].min(axis=1)
         out["pm25_max_24h"] = out[available_pm25].max(axis=1)
         out["pm25_trend_24h"] = out[latest] - out[earliest]
@@ -147,6 +150,8 @@ def add_window_summary_features(windows: pd.DataFrame, window_size: int = 24) ->
             out[f"{col.lower()}_latest"] = out[f"{col}_lag_1"]
             out[f"{col.lower()}_mean_24h"] = out[lag_cols].mean(axis=1)
             out[f"{col.lower()}_trend_24h"] = out[f"{col}_lag_1"] - out[f"{col}_lag_{window_size}"]
+            if col in ["WSPM", "TEMP"]:
+                out[f"{col.lower()}_std_24h"] = out[lag_cols].std(axis=1)
 
     end_dt = pd.to_datetime(out["window_end_datetime"])
     out["hour"] = end_dt.dt.hour

@@ -46,4 +46,33 @@ def add_boosting_interaction_features(df: pd.DataFrame) -> pd.DataFrame:
     if {"PM2.5_lag_1", "PM2.5_lag_2", "PM2.5_lag_3"}.issubset(out.columns):
         out["pm25_acceleration_3h"] = out["PM2.5_lag_1"] - 2 * out["PM2.5_lag_2"] + out["PM2.5_lag_3"]
 
+    if {"WSPM_lag_1", "wd_lag_1"}.issubset(out.columns):
+        wd_map = {
+            "N": 0.0, "NNE": 22.5, "NE": 45.0, "ENE": 67.5,
+            "E": 90.0, "ESE": 112.5, "SE": 135.0, "SSE": 157.5,
+            "S": 180.0, "SSW": 202.5, "SW": 225.0, "WSW": 247.5,
+            "W": 270.0, "WNW": 292.5, "NW": 315.0, "NNW": 337.5,
+        }
+        rad = out["wd_lag_1"].map(wd_map).fillna(0.0) * (np.pi / 180.0)
+        # U is east-west (sin), V is north-south (cos)
+        out["wind_u_lag1"] = out["WSPM_lag_1"] * np.sin(rad)
+        out["wind_v_lag1"] = out["WSPM_lag_1"] * np.cos(rad)
+
+    if {"PM2.5_lag_1", "PM2.5_lag_2"}.issubset(out.columns):
+        out["pm25_diff_1_2"] = out["PM2.5_lag_1"] - out["PM2.5_lag_2"]
+    if {"PM2.5_lag_2", "PM2.5_lag_3"}.issubset(out.columns):
+        out["pm25_diff_2_3"] = out["PM2.5_lag_2"] - out["PM2.5_lag_3"]
+
+    if {"O3_lag_1", "NO2_lag_1"}.issubset(out.columns):
+        out["o3_to_no2_ratio_lag1"] = out["O3_lag_1"] / (out["NO2_lag_1"].abs() + 1.0)
+        
+    if {"SO2_lag_1", "NO2_lag_1"}.issubset(out.columns):
+        out["so2_to_no2_ratio_lag1"] = out["SO2_lag_1"] / (out["NO2_lag_1"].abs() + 1.0)
+
+    if {"TEMP_lag_1", "TEMP_lag_2", "TEMP_lag_3"}.issubset(out.columns):
+        out["temperature_acceleration_3h"] = out["TEMP_lag_1"] - 2 * out["TEMP_lag_2"] + out["TEMP_lag_3"]
+        
+    if {"WSPM_lag_1"}.issubset(out.columns):
+        out["wspm_kinetic"] = out["WSPM_lag_1"] ** 2
+
     return out
