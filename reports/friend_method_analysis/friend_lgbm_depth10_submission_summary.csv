@@ -1,0 +1,10 @@
+metric,value
+rows,4103
+columns,"id,PM2.5"
+missing_values,0
+mean_prediction,77.1669914836337
+min_prediction,4.546593588748015
+max_prediction,565.0809444254799
+changed_rows_vs_old_primary,4103
+mean_abs_diff_vs_old_primary,1.1689246711865986
+max_abs_diff_vs_old_primary,27.306895299192547
