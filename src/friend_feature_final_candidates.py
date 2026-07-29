@@ -137,6 +137,38 @@ def fit_lgbm(lgb, name: str, train_df: pd.DataFrame, test_features: pd.DataFrame
     return name, pred, notes
 
 
+def fit_xgboost(xgb, name: str, train_df: pd.DataFrame, test_features: pd.DataFrame, features: list[str], categorical_cols: list[str], params: dict) -> tuple[str, np.ndarray, dict]:
+    """Fit one XGBoost candidate and return test predictions."""
+    X_train = train_df[features].copy()
+    X_test = test_features[features].copy()
+    for col in categorical_cols:
+        X_train[col] = X_train[col].astype("category")
+        X_test[col] = X_test[col].astype("category")
+
+    start = time.perf_counter()
+    model = xgb.XGBRegressor(**params)
+    model.fit(X_train, train_df["target_pm25"].astype(float))
+    pred = np.clip(model.predict(X_test), 0.0, None)
+    notes = {**params, "fit_seconds": round(time.perf_counter() - start, 3), "train_rows": len(train_df)}
+    return name, pred, notes
+
+
+def fit_catboost(cb, name: str, train_df: pd.DataFrame, test_features: pd.DataFrame, features: list[str], categorical_cols: list[str], params: dict) -> tuple[str, np.ndarray, dict]:
+    """Fit one CatBoost candidate and return test predictions."""
+    X_train = train_df[features].copy()
+    X_test = test_features[features].copy()
+    for col in categorical_cols:
+        X_train[col] = X_train[col].astype(str)
+        X_test[col] = X_test[col].astype(str)
+
+    start = time.perf_counter()
+    model = cb.CatBoostRegressor(**params)
+    model.fit(X_train, train_df["target_pm25"].astype(float), cat_features=categorical_cols)
+    pred = np.clip(model.predict(X_test), 0.0, None)
+    notes = {**params, "fit_seconds": round(time.perf_counter() - start, 3), "train_rows": len(train_df)}
+    return name, pred, notes
+
+
 def write_submission(sample_submission: pd.DataFrame, pred: np.ndarray, path: Path) -> None:
     """Write a Kaggle-format submission."""
     out = sample_submission[["id"]].copy()
@@ -237,7 +269,10 @@ def run(data_dir: str | Path, output_dir: str | Path) -> None:
     test = files["test.csv"]
     sample_submission = files["sample_submission.csv"]
 
-    lgb = optional_imports().get("lightgbm")
+    imports = optional_imports()
+    lgb = imports.get("lightgbm")
+    xgb = imports.get("xgboost")
+    cb = imports.get("catboost")
     if lgb is None:
         raise ImportError("lightgbm is required.")
 
@@ -271,19 +306,58 @@ def run(data_dir: str | Path, output_dir: str | Path) -> None:
         "verbosity": -1,
     }
 
+    try:
+        with open(output_dir / "reports" / "best_lgbm_params.json") as f:
+            best_optuna_params = json.load(f)
+    except FileNotFoundError:
+        best_optuna_params = base_depth10.copy()
+
+    best_optuna_params["objective"] = "regression"
+    best_optuna_params["random_state"] = 42
+    best_optuna_params["n_jobs"] = -1
+    best_optuna_params["verbosity"] = -1
+
+    xgb_params = {
+        "n_estimators": 300,
+        "learning_rate": 0.03,
+        "max_depth": 8,
+        "subsample": 0.9,
+        "colsample_bytree": 0.85,
+        "enable_categorical": True,
+        "random_state": 42,
+        "tree_method": "hist",
+        "device": "cuda" if xgb else "cpu",
+    }
+
+    cb_params = {
+        "iterations": 300,
+        "learning_rate": 0.04,
+        "depth": 8,
+        "random_seed": 42,
+        "verbose": False,
+        "task_type": "GPU" if cb else "CPU",
+    }
+
     specs = [
-        ("friend_city_context_depth10_all_train", {**base_depth10, "random_state": 42}),
-        ("friend_city_context_depth8_all_train", {**base_depth8, "random_state": 42}),
-        ("friend_city_context_depth10_bag_seed22", {**base_depth10, "random_state": 22, "subsample_freq": 1}),
-        ("friend_city_context_depth10_bag_seed77", {**base_depth10, "random_state": 77, "subsample_freq": 1}),
-        ("friend_city_context_depth10_bag_seed2026", {**base_depth10, "random_state": 2026, "subsample_freq": 1}),
+        ("friend_city_context_depth10_all_train", {**base_depth10, "random_state": 42}, "lgb"),
+        ("friend_city_context_depth8_all_train", {**base_depth8, "random_state": 42}, "lgb"),
+        ("friend_city_context_lgbm_optuna_all_train", best_optuna_params, "lgb"),
     ]
+    if xgb:
+        specs.append(("friend_city_context_xgboost_depth8_all_train", xgb_params, "xgb"))
+    if cb:
+        specs.append(("friend_city_context_catboost_depth8_all_train", cb_params, "cb"))
 
     predictions: dict[str, np.ndarray] = {}
     rows = []
-    for name, params in specs:
+    for name, params, model_type in specs:
         print(f"Training {name}...", flush=True)
-        model_name, pred, notes = fit_lgbm(lgb, name, train_df, test_features, features, categorical_cols, params)
+        if model_type == "lgb":
+            model_name, pred, notes = fit_lgbm(lgb, name, train_df, test_features, features, categorical_cols, params)
+        elif model_type == "xgb":
+            model_name, pred, notes = fit_xgboost(xgb, name, train_df, test_features, features, categorical_cols, params)
+        elif model_type == "cb":
+            model_name, pred, notes = fit_catboost(cb, name, train_df, test_features, features, categorical_cols, params)
         predictions[model_name] = pred
         rows.append(
             {
@@ -298,16 +372,12 @@ def run(data_dir: str | Path, output_dir: str | Path) -> None:
         )
         write_submission(sample_submission, pred, submissions_dir / f"submission_{model_name}.csv")
 
-    bag_cols = [
-        "friend_city_context_depth10_all_train",
-        "friend_city_context_depth10_bag_seed22",
-        "friend_city_context_depth10_bag_seed77",
-        "friend_city_context_depth10_bag_seed2026",
-    ]
-    predictions["friend_city_context_depth10_bag_mean_all_train"] = np.mean([predictions[col] for col in bag_cols], axis=0)
-    predictions["friend_city_context_depth10_depth8_blend_all_train"] = (
-        0.85 * predictions["friend_city_context_depth10_all_train"] + 0.15 * predictions["friend_city_context_depth8_all_train"]
-    )
+    if "friend_city_context_lgbm_optuna_all_train" in predictions and "friend_city_context_xgboost_depth8_all_train" in predictions and "friend_city_context_catboost_depth8_all_train" in predictions:
+        predictions["friend_city_context_lgbm_xgb_cb_blend_all_train"] = (
+            0.50 * predictions["friend_city_context_lgbm_optuna_all_train"] +
+            0.25 * predictions["friend_city_context_xgboost_depth8_all_train"] +
+            0.25 * predictions["friend_city_context_catboost_depth8_all_train"]
+        )
 
     previous_path = submissions_dir / "submission_friend_features_lgbm_depth10.csv"
     if previous_path.exists():
@@ -315,8 +385,7 @@ def run(data_dir: str | Path, output_dir: str | Path) -> None:
         predictions["friend_plus_city_context_70_30_blend"] = 0.70 * previous + 0.30 * predictions["friend_city_context_depth10_all_train"]
 
     for name in [
-        "friend_city_context_depth10_bag_mean_all_train",
-        "friend_city_context_depth10_depth8_blend_all_train",
+        "friend_city_context_lgbm_xgb_cb_blend_all_train",
         "friend_plus_city_context_70_30_blend",
     ]:
         if name not in predictions:
