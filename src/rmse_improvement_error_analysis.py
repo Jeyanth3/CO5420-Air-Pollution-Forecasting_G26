@@ -156,7 +156,7 @@ def fit_ridge_candidate(
     numeric_cols: list[str],
     categorical_cols: list[str],
     y_test: np.ndarray,
-) -> tuple[dict, np.ndarray]:
+) -> tuple[dict, np.ndarray, np.ndarray]:
     """Fit the compact Ridge reference."""
     features = numeric_cols + categorical_cols
     pipe = Pipeline(
@@ -180,7 +180,7 @@ def fit_ridge_candidate(
             "train_rows": len(train_df),
         },
     )
-    return row, pred_test
+    return row, pred_test, pred_valid
 
 
 def fit_lgbm_candidates(
@@ -191,7 +191,7 @@ def fit_lgbm_candidates(
     categorical_cols: list[str],
     y_test: np.ndarray,
     random_state: int,
-) -> tuple[list[dict], dict[str, np.ndarray]]:
+) -> tuple[list[dict], dict[str, np.ndarray], dict[str, np.ndarray]]:
     """Fit compact LightGBM candidates discovered from the improvement search."""
     modules = optional_imports()
     lgb = modules.get("lightgbm")
@@ -204,7 +204,7 @@ def fit_lgbm_candidates(
                 "skipped",
                 {"reason": "lightgbm is not installed"},
             )
-        ], {}
+        ], {}, {}
 
     features = numeric_cols + categorical_cols
     X_train = train_df[features].copy()
@@ -244,8 +244,15 @@ def fit_lgbm_candidates(
         ),
     ]
 
+    best_params_path = Path("reports/best_lgbm_params.json")
+    if best_params_path.exists():
+        with open(best_params_path, "r") as f:
+            best_params = json.load(f)
+        configs.append(("lgbm_optuna_tuned", best_params))
+
     rows: list[dict] = []
     predictions: dict[str, np.ndarray] = {}
+    valid_predictions: dict[str, np.ndarray] = {}
     y_train = train_df["target_pm25"].astype(float)
     y_valid = valid_df["target_pm25"].astype(float)
     for name, params in configs:
@@ -258,9 +265,11 @@ def fit_lgbm_candidates(
             **params,
         )
         model.fit(X_train, y_train, categorical_feature=categorical_cols)
-        pred_valid = np.clip(model.predict(X_valid), 0.0, None)
         pred_test = np.clip(model.predict(X_test), 0.0, None)
+        pred_valid = np.clip(model.predict(X_valid), 0.0, None)
         predictions[name] = pred_test
+        valid_predictions[name] = pred_valid
+
         row = score_row(
             name,
             y_test,
@@ -275,7 +284,152 @@ def fit_lgbm_candidates(
             },
         )
         rows.append(row)
-    return rows, predictions
+
+    return rows, predictions, valid_predictions
+
+
+def fit_xgboost_candidate(
+    train_df: pd.DataFrame,
+    valid_df: pd.DataFrame,
+    test_features: pd.DataFrame,
+    numeric_cols: list[str],
+    categorical_cols: list[str],
+    y_test: np.ndarray,
+    random_state: int,
+) -> tuple[dict, np.ndarray, np.ndarray]:
+    """Fit a compact XGBoost candidate."""
+    modules = optional_imports()
+    xgb = modules.get("xgboost")
+    if xgb is None:
+        return score_row("xgboost_unavailable", y_test, np.full_like(y_test, np.nan), "skipped", {}), np.full_like(y_test, np.nan), np.full_like(y_test, np.nan)
+
+    features = numeric_cols + categorical_cols
+    X_train = train_df[features].copy()
+    X_valid = valid_df[features].copy()
+    X_test = test_features[features].copy()
+
+    for col in categorical_cols:
+        X_train[col] = X_train[col].astype("category")
+        X_valid[col] = X_valid[col].astype("category")
+        X_test[col] = X_test[col].astype("category")
+
+    y_train = train_df["target_pm25"].astype(float)
+    y_valid = valid_df["target_pm25"].astype(float)
+
+    model = xgb.XGBRegressor(
+        n_estimators=300,
+        learning_rate=0.03,
+        max_depth=8,
+        subsample=0.9,
+        colsample_bytree=0.85,
+        enable_categorical=True,
+        random_state=random_state,
+        tree_method="hist",
+        device="cuda",
+    )
+
+    start = time.perf_counter()
+    model.fit(X_train, y_train, eval_set=[(X_valid, y_valid)], verbose=False)
+    pred_valid = np.clip(model.predict(X_valid), 0.0, None)
+    pred_test = np.clip(model.predict(X_test), 0.0, None)
+
+    row = score_row(
+        "xgboost_compact_depth8",
+        y_test,
+        pred_test,
+        "competition_safe_model",
+        {
+            "validation_rmse": rmse(y_valid, pred_valid),
+            "fit_seconds": round(time.perf_counter() - start, 3),
+        },
+    )
+    return row, pred_test, pred_valid
+
+
+def fit_catboost_candidate(
+    train_df: pd.DataFrame,
+    valid_df: pd.DataFrame,
+    test_features: pd.DataFrame,
+    numeric_cols: list[str],
+    categorical_cols: list[str],
+    y_test: np.ndarray,
+    random_state: int,
+) -> tuple[dict, np.ndarray, np.ndarray]:
+    """Fit a compact CatBoost candidate."""
+    modules = optional_imports()
+    cb = modules.get("catboost")
+    if cb is None:
+        return score_row("catboost_unavailable", y_test, np.full_like(y_test, np.nan), "skipped", {}), np.full_like(y_test, np.nan), np.full_like(y_test, np.nan)
+
+    features = numeric_cols + categorical_cols
+    X_train = train_df[features].copy()
+    X_valid = valid_df[features].copy()
+    X_test = test_features[features].copy()
+    
+    for col in categorical_cols:
+        X_train[col] = X_train[col].fillna("UNKNOWN").astype(str)
+        X_valid[col] = X_valid[col].fillna("UNKNOWN").astype(str)
+        X_test[col] = X_test[col].fillna("UNKNOWN").astype(str)
+
+    y_train = train_df["target_pm25"].astype(float)
+    y_valid = valid_df["target_pm25"].astype(float)
+
+    model = cb.CatBoostRegressor(
+        iterations=300,
+        learning_rate=0.04,
+        depth=8,
+        random_seed=random_state,
+        verbose=False,
+        task_type="GPU",
+    )
+
+    start = time.perf_counter()
+    model.fit(X_train, y_train, cat_features=categorical_cols, eval_set=(X_valid, y_valid))
+    pred_valid = np.clip(model.predict(X_valid), 0.0, None)
+    pred_test = np.clip(model.predict(X_test), 0.0, None)
+
+    row = score_row(
+        "catboost_compact_depth8",
+        y_test,
+        pred_test,
+        "competition_safe_model",
+        {
+            "validation_rmse": rmse(y_valid, pred_valid),
+            "fit_seconds": round(time.perf_counter() - start, 3),
+        },
+    )
+    return row, pred_test, pred_valid
+
+
+def fit_meta_ensemble(
+    valid_predictions: dict[str, np.ndarray],
+    test_predictions: dict[str, np.ndarray],
+    y_valid: pd.Series,
+    y_test: np.ndarray,
+) -> tuple[dict, np.ndarray]:
+    """Train a Ridge blender on the validation predictions."""
+    X_valid_meta = pd.DataFrame(valid_predictions)
+    X_test_meta = pd.DataFrame(test_predictions)
+
+    start = time.perf_counter()
+    blender = Ridge(positive=True)
+    blender.fit(X_valid_meta, y_valid)
+    
+    pred_valid = np.clip(blender.predict(X_valid_meta), 0.0, None)
+    pred_test = np.clip(blender.predict(X_test_meta), 0.0, None)
+
+    row = score_row(
+        "meta_ensemble_stacking",
+        y_test,
+        pred_test,
+        "competition_safe_model",
+        {
+            "validation_rmse": rmse(y_valid, pred_valid),
+            "fit_seconds": round(time.perf_counter() - start, 3),
+            "weights": {col: round(w, 3) for col, w in zip(X_valid_meta.columns, blender.coef_)}
+        },
+    )
+    return row, pred_test
 
 
 def add_baseline_scores(test: pd.DataFrame, y_test: np.ndarray) -> tuple[list[dict], dict[str, np.ndarray]]:
@@ -412,10 +566,14 @@ def run(data_dir: str | Path, output_dir: str | Path, train_fraction: float, ran
     y_test = aligned["y_true"].to_numpy(dtype=float)
 
     rows, prediction_map = add_baseline_scores(test, y_test)
-    ridge_row, ridge_pred = fit_ridge_candidate(train_df, valid_df, test_features, numeric_cols, categorical_cols, y_test)
+    valid_map: dict[str, np.ndarray] = {}
+
+    ridge_row, ridge_pred, ridge_valid = fit_ridge_candidate(train_df, valid_df, test_features, numeric_cols, categorical_cols, y_test)
     rows.append(ridge_row)
     prediction_map["ridge_compact_alpha10"] = ridge_pred
-    lgb_rows, lgb_predictions = fit_lgbm_candidates(
+    valid_map["ridge_compact_alpha10"] = ridge_valid
+
+    lgb_rows, lgb_predictions, lgb_valid = fit_lgbm_candidates(
         train_df,
         valid_df,
         test_features,
@@ -426,6 +584,38 @@ def run(data_dir: str | Path, output_dir: str | Path, train_fraction: float, ran
     )
     rows.extend(lgb_rows)
     prediction_map.update(lgb_predictions)
+    valid_map.update(lgb_valid)
+
+    xgb_row, xgb_pred, xgb_valid = fit_xgboost_candidate(train_df, valid_df, test_features, numeric_cols, categorical_cols, y_test, random_state)
+    if "skipped" not in xgb_row["family"]:
+        rows.append(xgb_row)
+        prediction_map["xgboost_compact_depth8"] = xgb_pred
+        valid_map["xgboost_compact_depth8"] = xgb_valid
+
+    cb_row, cb_pred, cb_valid = fit_catboost_candidate(train_df, valid_df, test_features, numeric_cols, categorical_cols, y_test, random_state)
+    if "skipped" not in cb_row["family"]:
+        rows.append(cb_row)
+        prediction_map["catboost_compact_depth8"] = cb_pred
+        valid_map["catboost_compact_depth8"] = cb_valid
+
+    meta_row, meta_pred = fit_meta_ensemble(valid_map, {k: prediction_map[k] for k in valid_map}, valid_df["target_pm25"].astype(float), y_test)
+    rows.append(meta_row)
+    prediction_map["meta_ensemble_stacking"] = meta_pred
+
+    tree_models = ["lgbm_compact_depth10_regularized_first80", "xgboost_compact_depth8", "catboost_compact_depth8"]
+    valid_trees = [m for m in tree_models if m in prediction_map]
+    if valid_trees:
+        simple_pred_test = np.mean([prediction_map[m] for m in valid_trees], axis=0)
+        simple_pred_valid = np.mean([valid_map[m] for m in valid_trees], axis=0)
+        simple_row = score_row(
+            "simple_average_ensemble",
+            y_test,
+            simple_pred_test,
+            "competition_safe_model",
+            {"validation_rmse": rmse(valid_df["target_pm25"].astype(float), simple_pred_valid), "models": valid_trees}
+        )
+        rows.append(simple_row)
+        prediction_map["simple_average_ensemble"] = simple_pred_test
 
     model_results = pd.DataFrame(rows).sort_values("rmse").reset_index(drop=True)
     prediction_frame = aligned[["id", STATION_COL, "window_end_datetime", "target_datetime", "y_true"]].copy()
@@ -463,7 +653,31 @@ def run(data_dir: str | Path, output_dir: str | Path, train_fraction: float, ran
             sample_submission,
             test["id"],
             prediction_map[best_model],
-            submissions_dir / "submission_rmse_improvement_lgbm_compact.csv",
+            submissions_dir / "submission_best_diagnostic.csv",
+        )
+        
+    if "meta_ensemble_stacking" in prediction_map:
+        write_submission(
+            sample_submission,
+            test["id"],
+            prediction_map["meta_ensemble_stacking"],
+            submissions_dir / "submission_meta_ensemble.csv",
+        )
+        
+    if "simple_average_ensemble" in prediction_map:
+        write_submission(
+            sample_submission,
+            test["id"],
+            prediction_map["simple_average_ensemble"],
+            submissions_dir / "submission_simple_average.csv",
+        )
+        
+    if "lgbm_optuna_tuned" in prediction_map:
+        write_submission(
+            sample_submission,
+            test["id"],
+            prediction_map["lgbm_optuna_tuned"],
+            submissions_dir / "submission_optuna_tuned.csv",
         )
 
     print(model_results.to_string(index=False))
