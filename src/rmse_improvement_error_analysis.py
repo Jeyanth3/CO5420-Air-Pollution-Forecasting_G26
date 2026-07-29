@@ -325,7 +325,7 @@ def fit_xgboost_candidate(
         enable_categorical=True,
         random_state=random_state,
         tree_method="hist",
-        device="cuda",
+        device="cpu",
     )
 
     start = time.perf_counter()
@@ -380,7 +380,7 @@ def fit_catboost_candidate(
         depth=8,
         random_seed=random_state,
         verbose=False,
-        task_type="GPU",
+        task_type="CPU",
     )
 
     start = time.perf_counter()
