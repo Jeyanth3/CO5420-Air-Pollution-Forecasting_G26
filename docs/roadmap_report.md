@@ -257,7 +257,7 @@ Avoid overfitting:
 - Freeze final model and seed.
 - Re-run notebook from start to finish.
 - Create final `submission.csv`.
-- Write final report: methodology, research support, experiments, results, limitations, AI-use statement.
+- Write final report: methodology, research support, experiments, results, limitations, and tool-use statement if required by the course.
 
 ## 11. Research Basis
 
