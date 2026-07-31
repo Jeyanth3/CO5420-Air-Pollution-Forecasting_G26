@@ -1,8 +1,19 @@
-# Data and generated artifacts
+# Raw data and generated datasets
 data/raw/
 data/processed/
 data/source/
+co-5420-air-pollution-forecasting-using-temporal-n-ns/
+
+# Generated model artifacts
+models/
+output/
+tmp/
+catboost_info/
+
+# Generated submissions
 submissions/*.csv
+
+# Generated metric tables
 reports/day1/*.csv
 reports/day1/*.json
 reports/preprocessing_window_baselines/*.csv
@@ -19,7 +30,6 @@ reports/final_objective_experiments/*.csv
 reports/final_objective_experiments/*.json
 reports/rmse_improvement_error_analysis/*.csv
 reports/rmse_improvement_error_analysis/*.json
-models/
 
 # Python
 __pycache__/
@@ -34,20 +44,3 @@ venv/
 
 # OS/editor
 .DS_Store
-interactive_course.html
-.gitignore
-catboost_info/catboost_training.json
-catboost_info/learn_error.tsv
-catboost_info/test_error.tsv
-catboost_info/time_left.tsv
-catboost_info/learn/events.out.tfevents
-catboost_info/test/events.out.tfevents
-co-5420-air-pollution-forecasting-using-temporal-n-ns/sample_submission.csv
-co-5420-air-pollution-forecasting-using-temporal-n-ns/train_raw.csv
-co-5420-air-pollution-forecasting-using-temporal-n-ns/CO5420-AirPollution/public/sample_submission.csv
-co-5420-air-pollution-forecasting-using-temporal-n-ns/CO5420-AirPollution/public/test_raw.csv
-co-5420-air-pollution-forecasting-using-temporal-n-ns/CO5420-AirPollution/public/test.csv
-co-5420-air-pollution-forecasting-using-temporal-n-ns/CO5420-AirPollution/public/train_raw.csv
-reports/rmse_improvement_error_analysis/figures/official_test_model_rmse.png
-reports/rmse_improvement_error_analysis/figures/official_test_model_rmse.png
-reports/rmse_improvement_error_analysis/figures/official_test_model_rmse.png
